@@ -1,14 +1,14 @@
+import os
+
+print("=== DEBUG START ===")
+print("Arquivos disponíveis na pasta:", os.listdir('.'))
+print("PORT recebida do ambiente:", os.getenv("PORT"))
+print("=== DEBUG END ===")
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 import pandas as pd
 from cotador_agent import cotador_agent
-import os
-
-print("=== ARQUIVOS NA PASTA ===")
-print(os.listdir('.'))
-print("=== PORTA CONFIGURADA ===")
-print(os.getenv("PORT"))
 
 planos = pd.read_csv("planos.csv")
 beneficios = pd.read_csv("beneficios_planos.csv")
