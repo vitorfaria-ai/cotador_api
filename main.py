@@ -3,6 +3,12 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import pandas as pd
 from cotador_agent import cotador_agent
+import os
+
+print("=== ARQUIVOS NA PASTA ===")
+print(os.listdir('.'))
+print("=== PORTA CONFIGURADA ===")
+print(os.getenv("PORT"))
 
 planos = pd.read_csv("planos.csv")
 beneficios = pd.read_csv("beneficios_planos.csv")
