@@ -5,6 +5,14 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     problemas_dores = input_usuario["problemas_dores"]
     quantidade_vidas = input_usuario.get("quantidade_vidas", 1)
 
+    # 🚩 Conversão segura de quantidade_vidas para inteiro e validação de positivo
+    try:
+        quantidade_vidas = int(quantidade_vidas)
+        if quantidade_vidas < 1:
+            raise ValueError
+    except (ValueError, TypeError):
+        raise ValueError("O campo 'quantidade_vidas' precisa ser um número inteiro maior que zero (ex.: 2). Mesmo que venha como string, ele deve ser numérico.")
+
     correlacoes = {
         "autoligado": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre aparelho autoligado, mas é o mais completo para tratamentos ortodônticos tradicionais.", "relacionado": True},
         "invisalign": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre Invisalign, mas é o mais completo para tratamentos ortodônticos convencionais.", "relacionado": True},
@@ -107,7 +115,6 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
         plano_escolhido = planos_com_prioridade.iloc[0]
         formas = formas_pagamento[formas_pagamento["plano_id"] == plano_escolhido["id"]]
 
-    # Agrupar formas de pagamento por carência
     agrupado = {}
     for _, forma in formas.iterrows():
         preco = forma["preco"] if "preco" in forma and pd.notnull(forma["preco"]) else 0
@@ -121,7 +128,6 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
             }
         agrupado[carencia]["formas_pagamento"].append(forma_nome)
 
-    # Montar resposta final consolidada
     saida_final = [{
         "plano_recomendado": plano_escolhido["nome"],
         "preco_por_pessoa": f'R$ {preco:.2f}' if preco else "Preço não disponível",
