@@ -22,8 +22,8 @@ app = FastAPI()
 # Definição do modelo de input
 class InputUsuario(BaseModel):
     tipo_contrato: str
-    problemas_dores: str               # << Agora como string!
-    quantidade_vidas: str              # << Continua string (ex.: "2")
+    problemas_dores: str               # Agora como string!
+    quantidade_vidas: str              # Continua string!
 
 @app.post("/cotar")
 async def cotar(input_usuario: InputUsuario):
@@ -42,6 +42,12 @@ async def cotar(input_usuario: InputUsuario):
     problemas_dores_list = [
         p.strip() for p in input_usuario.problemas_dores.split(",") if p.strip()
     ]
+
+    if not problemas_dores_list:
+        raise HTTPException(
+            status_code=400,
+            detail="O campo 'problemas_dores' não pode ser vazio. Informe pelo menos um problema ou dor."
+        )
 
     # Montar o input ajustado com os dados convertidos
     input_dict = {
