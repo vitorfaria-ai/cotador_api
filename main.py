@@ -22,23 +22,33 @@ app = FastAPI()
 # Definição do modelo de input
 class InputUsuario(BaseModel):
     tipo_contrato: str
-    problemas_dores: list[str]
-    quantidade_vidas: str  # Agora como string para receber "2", "3", etc.
+    problemas_dores: str               # << Agora como string!
+    quantidade_vidas: str              # << Continua string (ex.: "2")
 
 @app.post("/cotar")
 async def cotar(input_usuario: InputUsuario):
-    # Tentar converter quantidade_vidas para int
+    # Conversão segura de quantidade_vidas para inteiro
     try:
         quantidade_vidas = int(input_usuario.quantidade_vidas)
+        if quantidade_vidas < 1:
+            raise ValueError
     except (ValueError, TypeError):
         raise HTTPException(
             status_code=400,
-            detail="O campo 'quantidade_vidas' deve ser um número (ex.: 2), mesmo que venha como string."
+            detail="O campo 'quantidade_vidas' deve ser um número inteiro maior que zero (ex.: 2)."
         )
 
-    # Montar o input ajustado com a quantidade convertida
-    input_dict = input_usuario.dict()
-    input_dict["quantidade_vidas"] = quantidade_vidas  # Sobrescreve no dicionário
+    # Conversão de problemas_dores (string separada por vírgula) para lista
+    problemas_dores_list = [
+        p.strip() for p in input_usuario.problemas_dores.split(",") if p.strip()
+    ]
+
+    # Montar o input ajustado com os dados convertidos
+    input_dict = {
+        "tipo_contrato": input_usuario.tipo_contrato,
+        "problemas_dores": problemas_dores_list,
+        "quantidade_vidas": quantidade_vidas
+    }
 
     # Chamar o cotador
     resultado = cotador_agent(
