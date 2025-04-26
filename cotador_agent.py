@@ -13,6 +13,13 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     except (ValueError, TypeError):
         raise ValueError("O campo 'quantidade_vidas' precisa ser um número inteiro maior que zero (ex.: 2). Mesmo que venha como string, ele deve ser numérico.")
 
+    # 🚩 Conversão segura de problemas_dores para lista, mesmo que venha como string
+    if isinstance(problemas_dores, str):
+        problemas_dores = [p.strip() for p in problemas_dores.split(",") if p.strip()]
+
+    if not problemas_dores:
+        raise ValueError("O campo 'problemas_dores' não pode ser vazio. Informe pelo menos um problema ou dor.")
+
     correlacoes = {
         "autoligado": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre aparelho autoligado, mas é o mais completo para tratamentos ortodônticos tradicionais.", "relacionado": True},
         "invisalign": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre Invisalign, mas é o mais completo para tratamentos ortodônticos convencionais.", "relacionado": True},
