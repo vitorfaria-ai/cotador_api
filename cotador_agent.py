@@ -4,6 +4,7 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     tipo_contrato = input_usuario["tipo_contrato"]
     problemas_dores = input_usuario["problemas_dores"]
     quantidade_vidas = input_usuario.get("quantidade_vidas", 1)
+    operadora_preferida = input_usuario.get("operadora_preferida")
 
     try:
         quantidade_vidas = int(quantidade_vidas)
@@ -41,7 +42,16 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
         plano_escolhido = planos[planos["nome"].str.contains(plano_forcado, case=False)].iloc[0]
     else:
         planos_com_prioridade = planos_com_beneficios.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
-        plano_escolhido = planos_com_prioridade.iloc[0]
+        if operadora_preferida:
+            planos_filtrados_operadora = planos_com_prioridade[
+                planos_com_prioridade["operadora"].str.contains(operadora_preferida, case=False, na=False)
+            ]
+            if not planos_filtrados_operadora.empty:
+                plano_escolhido = planos_filtrados_operadora.iloc[0]
+            else:
+                plano_escolhido = planos_com_prioridade.iloc[0]  # Cai para o de maior prioridade se não encontrar a operadora pedida
+        else:
+            plano_escolhido = planos_com_prioridade.iloc[0]
 
     formas = formas_pagamento[formas_pagamento["plano_id"] == plano_escolhido["id"]]
 
