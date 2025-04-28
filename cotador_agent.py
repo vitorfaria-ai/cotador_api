@@ -84,15 +84,31 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     else:
         # Primeiro filtra tipo_contrato e operadora preferida
         planos_filtrados = planos[planos["tipo_contrato"] == tipo_contrato]
+        operadora_filtrada = False
         if operadora_preferida:
             planos_operadora = planos_filtrados[planos_filtrados["operadora"].str.contains(operadora_preferida, case=False, na=False)]
             if not planos_operadora.empty:
                 planos_filtrados = planos_operadora
+                operadora_filtrada = True
 
-        # Depois aplica os benefícios e prioridades
+        # Aplica os benefícios normalmente:
         planos_com_beneficios = planos_filtrados.merge(beneficios, left_on="id", right_on="plano_id").drop_duplicates(subset=["id"])
         planos_com_prioridade = planos_com_beneficios.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
+
+        # Se nenhum plano sobrou, mas havia operadora pedida:
+        if planos_com_prioridade.empty and operadora_preferida:
+            # Repega qualquer plano da operadora, ignorando os benefícios
+            planos_filtrados = planos[planos["tipo_contrato"] == tipo_contrato]
+            planos_operadora = planos_filtrados[planos_filtrados["operadora"].str.contains(operadora_preferida, case=False, na=False)]
+            if not planos_operadora.empty:
+                planos_com_prioridade = planos_operadora.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
+            # 🛠️ AQUI entra a checagem:
+            if planos_com_prioridade.empty:
+                return [{"mensagem": f"Não encontramos nenhum plano da operadora {operadora_preferida} para o tipo de contrato {tipo_contrato}. 😕"}]
+
+        # Agora finalmente escolhe:
         plano_escolhido = planos_com_prioridade.iloc[0]
+
 
     # Separar dores em básicas e especiais
     dores_basicas = []
