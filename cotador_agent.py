@@ -107,7 +107,10 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
                 return [{"mensagem": f"Não encontramos nenhum plano da operadora {operadora_preferida} para o tipo de contrato {tipo_contrato}. 😕"}]
 
         # Agora finalmente escolhe:
+        if planos_com_prioridade.empty:
+            return [{"mensagem": f"Não encontramos nenhum plano disponível para o tipo de contrato {tipo_contrato}."}]
         plano_escolhido = planos_com_prioridade.iloc[0]
+
 
 
     # Separar dores em básicas e especiais
