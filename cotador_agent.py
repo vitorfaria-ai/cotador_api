@@ -14,6 +14,15 @@ def comparar_termos(problema, termo):
     termo = normalizar_texto(termo)
     return termo in problema or problema in termo
 
+def adicionar_mensagem_transbordo(mensagem, cobertura_reconhecida):
+    if not cobertura_reconhecida:
+        return (f"O plano básico da operadora que pediu é o que segue abaixo, "
+                f"mas é ideal que eu te conecte com um especialista para ele te passar todos os detalhes "
+                f"se este plano cobre sua necessidade específica. Assim você pode ter a melhor experiência. O que você acha? 😊\n\n"
+                f"{mensagem}")
+    return mensagem
+
+
 def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_operadora):
     tipo_contrato = input_usuario["tipo_contrato"]
     problemas_dores = input_usuario["problemas_dores"]
@@ -32,6 +41,18 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
 
     if not problemas_dores:
         raise ValueError("O campo 'problemas_dores' não pode ser vazio.")
+
+    coberturas_basicas = [
+        "urgência", "emergência", "consulta", "limpeza", "profilaxia", "flúor",
+        "raio x", "radiografia", "panorâmico", "periapical", 
+        "gengiva", "periodontia",
+        "canal", "endodontia",
+        "odontopediatria", "pediatria",
+        "restauração", "dentística",
+        "cirurgia", "extração", "siso", "incluso",
+        "prótese rol", "prótese básica",
+        "documentação ortodôntica", "documentação básica"
+    ]
 
     correlacoes = {
         "autoligado": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre aparelho autoligado, mas é o mais completo para tratamentos ortodônticos tradicionais.", "relacionado": True},
@@ -73,13 +94,30 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
         planos_com_prioridade = planos_com_beneficios.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
         plano_escolhido = planos_com_prioridade.iloc[0]
 
+    # Separar dores em básicas e especiais
+    dores_basicas = []
+    dores_especiais = []
+
+    for problema in problemas_dores:
+        problema_normalizado = normalizar_texto(problema)
+        if any(palavra in problema_normalizado for palavra in coberturas_basicas):
+            dores_basicas.append(problema)
+        else:
+            dores_especiais.append(problema)
+
     # Verificação sensível para coberturas desconhecidas
     cobertura_reconhecida = True
-    for problema in problemas_dores:
-        cobertura_encontrada = any(comparar_termos(problema, termo) for termo in correlacoes)
-        if not cobertura_encontrada:
-            cobertura_reconhecida = False
-            break  # ✅ Para o loop assim que encontrar a primeira dor desconhecida
+
+    # Se existem dores especiais, verificar se elas são reconhecidas
+    if dores_especiais:
+        for problema in dores_especiais:
+            cobertura_encontrada = any(comparar_termos(problema, termo) for termo in correlacoes)
+            if not cobertura_encontrada:
+                cobertura_reconhecida = False
+                break
+    else:
+        # Se só existem dores básicas, consideramos reconhecido
+        cobertura_reconhecida = True
 
     formas = formas_pagamento[formas_pagamento["plano_id"] == plano_escolhido["id"]]
 
@@ -94,13 +132,9 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
                              f"💰 Preço por pessoa: R$ {preco:.2f}\n"
                              f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {preco * quantidade_vidas:.2f}\n"
                              f"🕑 Carência: {forma['carencia']}")
+        
+        mensagem_whatsapp = adicionar_mensagem_transbordo(mensagem_whatsapp, cobertura_reconhecida)
 
-        # ADICIONE AQUI também a verificação sensível:
-        if not cobertura_reconhecida:
-            mensagem_whatsapp = (f"O plano básico da operadora que pediu é o que segue abaixo, "
-                                f"mas é ideal que eu te conecte com um especialista para ele te passar todos os detalhes "
-                                f"se este plano cobre sua necessidade específica. Assim você pode ter a melhor experiência. O que você acha? 😊\n\n"
-                                f"{mensagem_whatsapp}")
         return [{
             "plano_recomendado": plano_escolhido["nome"],
             "preco_por_pessoa": f'R$ {preco:.2f}',
@@ -133,12 +167,7 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
                                   f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {group['preco'] * quantidade_vidas:.2f}\n"
                                   f"🕑 Carência: {group['carencia_texto']}\n\n")
 
-        # Se cobertura não reconhecida, monta mensagem especial:
-        if not cobertura_reconhecida:
-            mensagem_whatsapp = (f"O plano básico da operadora que pediu é o que segue abaixo, "
-                                f"mas é ideal que eu te conecte com um especialista para ele te passar todos os detalhes "
-                                f"se este plano cobre sua necessidade específica. Assim você pode ter a melhor experiência. O que você acha? 😊\n\n"
-                                f"{mensagem_whatsapp}")  # Mensagem padrão já montada anteriormente
+        mensagem_whatsapp = adicionar_mensagem_transbordo(mensagem_whatsapp, cobertura_reconhecida)
 
         return [{
             "plano_recomendado": plano_escolhido["nome"],
