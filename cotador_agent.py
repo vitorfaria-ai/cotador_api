@@ -91,8 +91,24 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
                 planos_filtrados = planos_operadora
                 operadora_filtrada = True
 
-        # Aplica os benefícios normalmente:
-        planos_com_beneficios = planos_filtrados.merge(beneficios, left_on="id", right_on="plano_id").drop_duplicates(subset=["id"])
+        # Separar dores em básicas e especiais
+        dores_basicas = []
+        dores_especiais = []
+
+        for problema in problemas_dores:
+            problema_normalizado = normalizar_texto(problema)
+            if any(palavra in problema_normalizado for palavra in coberturas_basicas):
+                dores_basicas.append(problema)
+            else:
+                dores_especiais.append(problema)
+
+        if dores_especiais:
+            # Se houver dores especiais, aplicar filtro de benefícios:
+            planos_com_beneficios = planos_filtrados.merge(beneficios, left_on="id", right_on="plano_id").drop_duplicates(subset=["id"])
+        else:
+            # Se só tiver dores básicas, NÃO filtra pelos benefícios:
+            planos_com_beneficios = planos_filtrados
+
         planos_com_prioridade = planos_com_beneficios.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
 
         # Se nenhum plano sobrou, mas havia operadora pedida:
@@ -113,16 +129,7 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
 
 
 
-    # Separar dores em básicas e especiais
-    dores_basicas = []
-    dores_especiais = []
 
-    for problema in problemas_dores:
-        problema_normalizado = normalizar_texto(problema)
-        if any(palavra in problema_normalizado for palavra in coberturas_basicas):
-            dores_basicas.append(problema)
-        else:
-            dores_especiais.append(problema)
 
     # Verificação sensível para coberturas desconhecidas
     cobertura_reconhecida = True
