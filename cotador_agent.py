@@ -9,7 +9,7 @@ coberturas_basicas = [
     "raio x", "radiografia", "panorâmico", "periapical", 
     "gengiva", "periodontia",
     "canal", "endodontia",
-    "odontopediatria", "pediatria",
+    "odontopediatria",
     "restauração", "dentística",
     "cirurgia", "extração", "siso", 
     "prótese rol",  
@@ -48,7 +48,7 @@ def cotador_agent(input_usuario, todos_produtos):
         dor_lower = dor.lower()
         if dor_lower in correlacoes:
             correlacao = correlacoes[dor_lower]
-            df_plano = todos_produtos[todos_produtos["plano"].str.contains(correlacao["plano_dedicado"], case=False)]
+            df_plano = todos_produtos[todos_produtos["nome_plano"].str.contains(correlacao["plano_dedicado"], case=False)]
             if not df_plano.empty:
                 melhor_plano = df_plano.iloc[0]
                 return montar_resposta(melhor_plano, correlacao["mensagem"])
@@ -60,7 +60,7 @@ def cotador_agent(input_usuario, todos_produtos):
         df_operadora = todos_produtos[todos_produtos["operadora"] == operadora]
         if not df_operadora.empty:
             if operadora == "Amil":
-                df_205 = df_operadora[df_operadora["plano"].str.contains("205", case=False)]
+                df_205 = df_operadora[df_operadora["nome_plano"].str.contains("205", case=False)]
                 if not df_205.empty:
                     melhor_plano = df_205.iloc[0]
                     return montar_resposta(melhor_plano)
@@ -74,7 +74,7 @@ def cotador_agent(input_usuario, todos_produtos):
 def montar_resposta(plano, mensagem_extra=""):
     resposta = {
         "operadora": plano["operadora"],
-        "plano": plano["plano"],
+        "plano": plano["nome_plano"],
         "preco": plano["preco"],
         "detalhes": plano["descricao"],
         "mensagem_extra": mensagem_extra
