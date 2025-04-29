@@ -194,6 +194,7 @@ def cotador_agent(input_usuario, todos_produtos):
             f"💰 Preço por pessoa: R$ {preco:.2f}\n"
             f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {preco * quantidade_vidas:.2f}\n"
             f"🕑 Carência: {carencia}"
+        )
 
         if mensagem_especial:
             mensagem_whatsapp = f"{mensagem_especial}\n\n{mensagem_whatsapp}"
