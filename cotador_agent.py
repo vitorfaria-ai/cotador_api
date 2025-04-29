@@ -204,20 +204,20 @@ def cotador_agent(input_usuario, todos_produtos):
         "mensagem_whatsapp": mensagem_whatsapp.strip()
     }]
 
-else:
-    # Para PF: mostrar todas as formas
-    agrupado = {}
-    for _, forma in formas_disponiveis.iterrows():
-        preco = forma["preco"]
-        carencia = forma["carencia"]
-        forma_nome = forma["forma_pagamento"]
-        if carencia not in agrupado:
-            agrupado[carencia] = {
-                "formas_pagamento": [],
-                "preco": preco,
-                "carencia_texto": carencia
-            }
-        agrupado[carencia]["formas_pagamento"].append(forma_nome)
+    else:
+        # Para PF: mostrar todas as formas
+        agrupado = {}
+        for _, forma in formas_disponiveis.iterrows():
+            preco = forma["preco"]
+            carencia = forma["carencia"]
+            forma_nome = forma["forma_pagamento"]
+            if carencia not in agrupado:
+                agrupado[carencia] = {
+                    "formas_pagamento": [],
+                    "preco": preco,
+                    "carencia_texto": carencia
+                }
+            agrupado[carencia]["formas_pagamento"].append(forma_nome)
 
     mensagem_whatsapp = f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()}\nO preço e as carências variam de acordo com a forma de pagamento:\n\n"
     for group in agrupado.values():
