@@ -47,6 +47,8 @@ correlacoes = {
 "aparelho dental": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
 "aparelho ortodontico": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
 "aparelho dentário": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+"plano infantil": {"mensagem": "Para crianças, recomendamos planos com cobertura odontopediátrica especializada.","plano_dedicado": "Dental K25 - Linha Kids", "relacionado": False},
+"para criança": {"mensagem": "Para crianças, recomendamos planos com cobertura odontopediátrica especializada.","plano_dedicado": "Dental K25 - Linha Kids", "relacionado": False},
 }
 
 def cotador_agent(input_usuario, todos_produtos):
@@ -144,7 +146,9 @@ def cotador_agent(input_usuario, todos_produtos):
                 produtos_cobertura['nome_plano'].str.contains('e50') | produtos_cobertura['nome_plano'].str.contains('premium')
             ]
 
-        plano_escolhido = produtos_cobertura.sort_values(by='preco', ascending=True).iloc[0]
+        planos_ordenados = produtos_cobertura.sort_values(by=["prioridade_operadora", "preco"])
+        plano_escolhido = planos_ordenados.iloc[0]
+
 
     # Verificação sensível para coberturas desconhecidas
     cobertura_reconhecida = True
@@ -184,11 +188,12 @@ def cotador_agent(input_usuario, todos_produtos):
         preco = forma["preco"]
         carencia = forma["carencia"]
 
-        mensagem_whatsapp = (f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()}\n\n"
-                            f"✅ *Forma de pagamento:* {forma['forma_pagamento']}\n"
-                            f"💰 Preço por pessoa: R$ {preco:.2f}\n"
-                            f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {preco * quantidade_vidas:.2f}\n"
-                            f"🕑 Carência: {carencia}")
+        mensagem_whatsapp = (
+            f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()} – {plano_escolhido['operadora']}\n\n"
+            f"✅ *Forma de pagamento:* {forma['forma_pagamento']}\n"
+            f"💰 Preço por pessoa: R$ {preco:.2f}\n"
+            f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {preco * quantidade_vidas:.2f}\n"
+            f"🕑 Carência: {carencia}"
 
         if mensagem_especial:
             mensagem_whatsapp = f"{mensagem_especial}\n\n{mensagem_whatsapp}"
@@ -219,7 +224,10 @@ def cotador_agent(input_usuario, todos_produtos):
                 }
             agrupado[carencia]["formas_pagamento"].append(forma_nome)
 
-        mensagem_whatsapp = f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()}\nO preço e as carências variam de acordo com a forma de pagamento:\n\n"
+        mensagem_whatsapp = (
+            f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()} – {plano_escolhido['operadora']}\n\n"
+            f"O preço e as carências variam de acordo com a forma de pagamento:\n\n"
+        )
         for group in agrupado.values():
             formas_texto = " ou ".join(group["formas_pagamento"])
             mensagem_whatsapp += (f"✅ *{formas_texto}:*\n"
