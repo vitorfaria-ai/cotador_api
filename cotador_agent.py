@@ -113,9 +113,18 @@ def cotador_agent(input_usuario, todos_produtos):
     # Se existe plano forçado via correlacoes
     if plano_forcado:
         produtos_contrato = todos_produtos[
-            (todos_produtos['nome_plano'].str.contains(plano_forcado, case=False, na=False)) &
-            (todos_produtos['tipo_contrato'] == tipo_contrato_cliente)
+            (todos_produtos['nome_plano'].str.lower().str.strip().str.contains(plano_forcado.lower().strip(), na=False)) &
+            (todos_produtos['tipo_contrato'].str.lower().str.strip() == tipo_contrato_cliente)
         ]
+
+        if operadora_preferida:
+            preferidos = produtos_contrato[
+                produtos_contrato["operadora"].str.lower().str.contains(operadora_preferida.lower().strip(), na=False)
+            ]
+            if not preferidos.empty:
+                produtos_contrato = preferidos  # Usa a operadora preferida, se existir
+            # senão, mantém os planos encontrados (de outras operadoras)
+
         if produtos_contrato.empty:
             return [{"mensagem": f"Não encontramos o plano especial {plano_forcado} para o tipo de contrato {tipo_contrato_cliente}."}]
     else:
