@@ -12,7 +12,7 @@ import pandas as pd
 from cotador_agent import cotador_agent
 
 # Carregar os arquivos CSV
-todos_produtos = pd.read_csv('todos_produtos_em_tabela.csv')
+todos_produtos = pd.read_csv('todos_produtos_em_tabela.csv', sep=';')
 
 # Iniciar o app FastAPI
 app = FastAPI()
