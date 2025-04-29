@@ -163,22 +163,20 @@ formas_disponiveis = todos_produtos[
     (todos_produtos['tipo_contrato'].str.lower() == tipo_contrato_cliente)
 ]
 
-if tipo_contrato == "pj":
-    # Para PJ: buscar boleto mensal primeiro
+if tipo_contrato_cliente == "pj":
     formas_filtradas = formas_disponiveis[
         (formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False)) &
         (formas_disponiveis['forma_pagamento'].str.contains("mensal", case=False, na=False))
     ]
 
-    # Se não encontrar boleto mensal, tenta qualquer boleto
     if formas_filtradas.empty:
         formas_filtradas = formas_disponiveis[
             (formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False))
         ]
 
-    # Se ainda assim não encontrar, erro
     if formas_filtradas.empty:
         return [{"mensagem": "Não encontramos opção de boleto para este plano PJ."}]
+
 
     forma = formas_filtradas.iloc[0]
     preco = forma["preco"]
