@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 print("=== DEBUG START ===")
 print("Arquivos disponíveis na pasta:", os.listdir('.'))
@@ -24,6 +25,7 @@ class InputUsuario(BaseModel):
     tipo_contrato: str
     problemas_dores: str               # Agora como string!
     quantidade_vidas: str              # Continua string!
+    operadora_preferida: Optional[str] = None  # ✅ Campo novo
 
 @app.post("/cotar")
 async def cotar(input_usuario: InputUsuario):
@@ -53,7 +55,8 @@ async def cotar(input_usuario: InputUsuario):
     input_dict = {
         "tipo_contrato": input_usuario.tipo_contrato,
         "problemas_dores": problemas_dores_list,
-        "quantidade_vidas": quantidade_vidas
+        "quantidade_vidas": quantidade_vidas,
+        "operadora_preferida": input_usuario.operadora_preferida
     }
 
     # Chamar o cotador
