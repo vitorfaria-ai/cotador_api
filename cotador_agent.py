@@ -16,11 +16,10 @@ def comparar_termos(problema, termo):
 
 def adicionar_mensagem_transbordo(mensagem, cobertura_reconhecida):
     if not cobertura_reconhecida:
-        return (f"O plano básico da operadora que pediu é o que segue abaixo, "
-                f"mas é ideal que eu te conecte com um especialista para ele te passar todos os detalhes "
-                f"se este plano cobre sua necessidade específica. Assim você pode ter a melhor experiência. O que você acha? 😊\n\n"
+        return (f"Essa cobertura é especial, então para te orientar melhor, vou te passar o plano padrão agora, e te coloco em contato com um especialista para te passar mais detalhes. O que acha? 😉\n\n"
                 f"{mensagem}")
     return mensagem
+
 
 def buscar_plano_fallback(planos, tipo_contrato, operadora_preferida, regras_operadora):
     planos_filtrados = planos[planos["tipo_contrato"] == tipo_contrato]
@@ -84,6 +83,10 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
         "onlay": {"mensagem": "Para 'onlay', recomendamos planos com cobertura estética como o E90, Premium Top ou Master.", "plano_dedicado": "Dental E90", "relacionado": False},
         "ponte móvel": {"mensagem": "Para 'ponte móvel', recomendamos o plano E60 ou superiores.", "plano_dedicado": "Dental E60", "relacionado": False},
         "dentadura": {"mensagem": "Para 'dentadura', recomendamos o plano E60 ou superiores.", "plano_dedicado": "Dental E60", "relacionado": False},
+        "aparelho": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+        "aparelho dental": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+        "aparelho ortodontico": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+        "aparelho dentário": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
     }
 
     resposta_especial = []
@@ -150,7 +153,18 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     formas = formas_pagamento[formas_pagamento["plano_id"] == plano_escolhido["id"]]
 
     if tipo_contrato == "pj":
-        formas_filtradas = formas[formas["forma"].str.contains("boleto", case=False, na=False)]
+        # Primeiro tenta boleto mensal
+        formas_filtradas = formas[
+            (formas["forma"].str.contains("boleto", case=False, na=False)) &
+            (formas["forma"].str.contains("mensal", case=False, na=False))
+        ]
+
+        # Se não encontrar boleto mensal, tenta qualquer boleto
+        if formas_filtradas.empty:
+            formas_filtradas = formas[
+                (formas["forma"].str.contains("boleto", case=False, na=False))
+            ]
+
         if formas_filtradas.empty:
             return [{"mensagem": "Não encontramos opção de boleto para este plano PJ."}]
         forma = formas_filtradas.iloc[0]
