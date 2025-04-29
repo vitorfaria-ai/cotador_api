@@ -22,6 +22,14 @@ def adicionar_mensagem_transbordo(mensagem, cobertura_reconhecida):
                 f"{mensagem}")
     return mensagem
 
+def buscar_plano_fallback(planos, tipo_contrato, operadora_preferida, regras_operadora):
+    planos_filtrados = planos[planos["tipo_contrato"] == tipo_contrato]
+    planos_operadora = planos_filtrados[planos_filtrados["operadora"].str.contains(operadora_preferida, case=False, na=False)]
+    if planos_operadora.empty:
+        return None
+    planos_com_prioridade = planos_operadora.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
+    return planos_com_prioridade
+
 
 def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_operadora):
     tipo_contrato = input_usuario["tipo_contrato"]
@@ -29,6 +37,17 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     quantidade_vidas = input_usuario.get("quantidade_vidas", 1)
     operadora_preferida = input_usuario.get("operadora_preferida")
 
+    coberturas_basicas = [
+        "urgência", "emergência", "consulta", "limpeza", "profilaxia", "flúor",
+        "raio x", "radiografia", "panorâmico", "periapical", 
+        "gengiva", "periodontia",
+        "canal", "endodontia",
+        "odontopediatria", "pediatria",
+        "restauração", "dentística",
+        "cirurgia", "extração", "siso", "incluso",
+        "prótese rol", "prótese básica",
+        "documentação ortodôntica", "documentação básica"
+    ]
     try:
         quantidade_vidas = int(quantidade_vidas)
         if quantidade_vidas < 1:
@@ -42,17 +61,17 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     if not problemas_dores:
         raise ValueError("O campo 'problemas_dores' não pode ser vazio.")
 
-    coberturas_basicas = [
-        "urgência", "emergência", "consulta", "limpeza", "profilaxia", "flúor",
-        "raio x", "radiografia", "panorâmico", "periapical", 
-        "gengiva", "periodontia",
-        "canal", "endodontia",
-        "odontopediatria", "pediatria",
-        "restauração", "dentística",
-        "cirurgia", "extração", "siso", "incluso",
-        "prótese rol", "prótese básica",
-        "documentação ortodôntica", "documentação básica"
-    ]
+    # Separar dores em básicas e especiais
+    dores_basicas = []
+    dores_especiais = []
+
+    for problema in problemas_dores:
+        problema_normalizado = normalizar_texto(problema)
+        if any(comparar_termos(problema, palavra) for palavra in coberturas_basicas):
+            dores_basicas.append(problema)
+        else:
+            dores_especiais.append(problema)
+
 
     correlacoes = {
         "autoligado": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre aparelho autoligado, mas é o mais completo para tratamentos ortodônticos tradicionais.", "relacionado": True},
@@ -82,7 +101,6 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
     if plano_forcado:
         plano_escolhido = planos[planos["nome"].str.contains(plano_forcado, case=False)].iloc[0]
     else:
-        # Primeiro filtra tipo_contrato e operadora preferida
         planos_filtrados = planos[planos["tipo_contrato"] == tipo_contrato]
         operadora_filtrada = False
         if operadora_preferida:
@@ -91,36 +109,20 @@ def cotador_agent(input_usuario, planos, beneficios, formas_pagamento, regras_op
                 planos_filtrados = planos_operadora
                 operadora_filtrada = True
 
-        # Separar dores em básicas e especiais
-        dores_basicas = []
-        dores_especiais = []
-
-        for problema in problemas_dores:
-            problema_normalizado = normalizar_texto(problema)
-            if any(palavra in problema_normalizado for palavra in coberturas_basicas):
-                dores_basicas.append(problema)
-            else:
-                dores_especiais.append(problema)
-
+        # 🟢 Agora usa a separação para decidir se aplica os benefícios ou não:
         if dores_especiais:
-            # Se houver dores especiais, aplicar filtro de benefícios:
             planos_com_beneficios = planos_filtrados.merge(beneficios, left_on="id", right_on="plano_id").drop_duplicates(subset=["id"])
         else:
-            # Se só tiver dores básicas, NÃO filtra pelos benefícios:
             planos_com_beneficios = planos_filtrados
+
 
         planos_com_prioridade = planos_com_beneficios.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
 
-        # Se nenhum plano sobrou, mas havia operadora pedida:
         if planos_com_prioridade.empty and operadora_preferida:
-            # Repega qualquer plano da operadora, ignorando os benefícios
-            planos_filtrados = planos[planos["tipo_contrato"] == tipo_contrato]
-            planos_operadora = planos_filtrados[planos_filtrados["operadora"].str.contains(operadora_preferida, case=False, na=False)]
-            if not planos_operadora.empty:
-                planos_com_prioridade = planos_operadora.merge(regras_operadora[["operadora", "prioridade"]], on="operadora").sort_values(by="prioridade")
-            # 🛠️ AQUI entra a checagem:
-            if planos_com_prioridade.empty:
+            planos_com_prioridade = buscar_plano_fallback(planos, tipo_contrato, operadora_preferida, regras_operadora)
+            if planos_com_prioridade is None or planos_com_prioridade.empty:
                 return [{"mensagem": f"Não encontramos nenhum plano da operadora {operadora_preferida} para o tipo de contrato {tipo_contrato}. 😕"}]
+
 
         # Agora finalmente escolhe:
         if planos_com_prioridade.empty:
