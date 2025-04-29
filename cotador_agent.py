@@ -171,41 +171,38 @@ def cotador_agent(input_usuario, todos_produtos):
 
         if formas_filtradas.empty:
             formas_filtradas = formas_disponiveis[
-                (formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False))
+                formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False)
             ]
 
         if formas_filtradas.empty:
             return [{"mensagem": "Não encontramos opção de boleto para este plano PJ."}]
 
+        forma = formas_filtradas.iloc[0]
+        preco = forma["preco"]
+        carencia = forma["carencia"]
 
-    forma = formas_filtradas.iloc[0]
-    preco = forma["preco"]
-    carencia = forma["carencia"]
+        mensagem_whatsapp = (f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()}\n\n"
+                            f"✅ *Forma de pagamento:* {forma['forma_pagamento']}\n"
+                            f"💰 Preço por pessoa: R$ {preco:.2f}\n"
+                            f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {preco * quantidade_vidas:.2f}\n"
+                            f"🕑 Carência: {carencia}")
 
-    mensagem_whatsapp = (f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()}\n\n"
-                         f"✅ *Forma de pagamento:* {forma['forma_pagamento']}\n"
-                         f"💰 Preço por pessoa: R$ {preco:.2f}\n"
-                         f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {preco * quantidade_vidas:.2f}\n"
-                         f"🕑 Carência: {carencia}")
+        if mensagem_especial:
+            mensagem_whatsapp = f"{mensagem_especial}\n\n{mensagem_whatsapp}"
 
-    if mensagem_especial:
-        mensagem_whatsapp = f"{mensagem_especial}\n\n{mensagem_whatsapp}"
+        mensagem_whatsapp = adicionar_mensagem_transbordo(mensagem_whatsapp, cobertura_reconhecida)
 
+        return [{
+            "plano_recomendado": plano_escolhido['nome_plano'].title(),
+            "preco_por_pessoa": f'R$ {preco:.2f}',
+            "preco_total": f'R$ {preco * quantidade_vidas:.2f}',
+            "quantidade_vidas": quantidade_vidas,
+            "forma_pagamento": forma["forma_pagamento"],
+            "carências": carencia,
+            "mensagem_whatsapp": mensagem_whatsapp.strip()
+        }]
 
-    mensagem_whatsapp = adicionar_mensagem_transbordo(mensagem_whatsapp, cobertura_reconhecida)
-
-    return [{
-        "plano_recomendado": plano_escolhido['nome_plano'].title(),
-        "preco_por_pessoa": f'R$ {preco:.2f}',
-        "preco_total": f'R$ {preco * quantidade_vidas:.2f}',
-        "quantidade_vidas": quantidade_vidas,
-        "forma_pagamento": forma["forma_pagamento"],
-        "carências": carencia,
-        "mensagem_whatsapp": mensagem_whatsapp.strip()
-    }]
-
-    else:
-        # Para PF: mostrar todas as formas
+    elif tipo_contrato_cliente == "pf":
         agrupado = {}
         for _, forma in formas_disponiveis.iterrows():
             preco = forma["preco"]
@@ -219,27 +216,28 @@ def cotador_agent(input_usuario, todos_produtos):
                 }
             agrupado[carencia]["formas_pagamento"].append(forma_nome)
 
-    mensagem_whatsapp = f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()}\nO preço e as carências variam de acordo com a forma de pagamento:\n\n"
-    for group in agrupado.values():
-        formas_texto = " ou ".join(group["formas_pagamento"])
-        mensagem_whatsapp += (f"✅ *{formas_texto}:*\n"
-                              f"💰 Preço por pessoa: R$ {group['preco']:.2f}\n"
-                              f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {group['preco'] * quantidade_vidas:.2f}\n"
-                              f"🕑 Carência: {group['carencia_texto']}\n\n")
+        mensagem_whatsapp = f"🎯 *Plano Recomendado:* {plano_escolhido['nome_plano'].title()}\nO preço e as carências variam de acordo com a forma de pagamento:\n\n"
+        for group in agrupado.values():
+            formas_texto = " ou ".join(group["formas_pagamento"])
+            mensagem_whatsapp += (f"✅ *{formas_texto}:*\n"
+                                f"💰 Preço por pessoa: R$ {group['preco']:.2f}\n"
+                                f"💳 Preço total (para {quantidade_vidas} pessoas): R$ {group['preco'] * quantidade_vidas:.2f}\n"
+                                f"🕑 Carência: {group['carencia_texto']}\n\n")
 
-    if mensagem_especial:
-        mensagem_whatsapp = f"{mensagem_especial}\n\n{mensagem_whatsapp}"
+        if mensagem_especial:
+            mensagem_whatsapp = f"{mensagem_especial}\n\n{mensagem_whatsapp}"
 
-    mensagem_whatsapp = adicionar_mensagem_transbordo(mensagem_whatsapp, cobertura_reconhecida)
+        mensagem_whatsapp = adicionar_mensagem_transbordo(mensagem_whatsapp, cobertura_reconhecida)
 
-    return [{
-        "plano_recomendado": plano_escolhido['nome_plano'].title(),
-        "quantidade_vidas": quantidade_vidas,
-        "precos_carencias": [{
-            "formas_pagamento": group["formas_pagamento"],
-            "preco_por_pessoa": f'R$ {group["preco"]:.2f}',
-            "preco_total": f'R$ {group["preco"] * quantidade_vidas:.2f}',
-            "carencias": group["carencia_texto"]
-        } for group in agrupado.values()],
-        "mensagem_whatsapp": mensagem_whatsapp.strip()
-    }]
+        return [{
+            "plano_recomendado": plano_escolhido['nome_plano'].title(),
+            "quantidade_vidas": quantidade_vidas,
+            "precos_carencias": [{
+                "formas_pagamento": group["formas_pagamento"],
+                "preco_por_pessoa": f'R$ {group["preco"]:.2f}',
+                "preco_total": f'R$ {group["preco"] * quantidade_vidas:.2f}',
+                "carencias": group["carencia_texto"]
+            } for group in agrupado.values()],
+            "mensagem_whatsapp": mensagem_whatsapp.strip()
+        }]
+
