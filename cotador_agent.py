@@ -136,6 +136,13 @@ def cotador_agent(input_usuario, todos_produtos):
         if produtos_contrato.empty:
             produtos_contrato = todos_produtos[todos_produtos['tipo_contrato'] == tipo_contrato_cliente]
 
+        # Proteção final: se não for plano forçado do tipo infantil, remove o plano Kids da lista
+        if plano_forcado != "Dental K25 - Linha Kids":
+            produtos_contrato = produtos_contrato[
+                ~produtos_contrato['nome_plano'].str.contains("kids", case=False, na=False)
+            ]
+
+
     # Ordenar por prioridade e preço SEMPRE
     planos_ordenados = produtos_contrato.sort_values(by=["prioridade_operadora", "preco"])
     plano_escolhido = planos_ordenados.iloc[0]
