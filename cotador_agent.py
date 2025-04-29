@@ -115,6 +115,9 @@ def cotador_agent(input_usuario, todos_produtos):
             return [{"mensagem": f"Não encontramos o plano especial {plano_forcado} para o tipo de contrato {tipo_contrato}."}]
         plano_escolhido = produtos_forcados.sort_values(by='preco', ascending=True).iloc[0]
 
+        produtos_contrato = produtos_forcados.copy()
+
+
     else:
         # Segue fluxo normal se não houver plano forçado
         # Primeiro, filtra todos os produtos que sejam compatíveis com o tipo de contrato
