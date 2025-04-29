@@ -1,5 +1,0 @@
-"operadora","permite_pf","permite_pj","permite_mei","exige_transbordo_30_ou_mais","carencia_variavel","permite_mescla_planos","exige_transbordo_mescla","prioridade","observacao_ia"
-"Amil",True,True,True,True,True,False,True,1," Operadora com maior variedade de produtos para todos os públicos. Verifique se é PF, CNPJ/MEI para direcionar corretamente. "
-"Bradesco Dental",False,True,True,True,True,False,True,3," Comercializamos apenas para CNPJ e MEI. Carência no MEI depende de promoções. Nunca informe carência fixa. PF não é comercializado. "
-"Hapvida Odonto",True,True,True,True,False,False,True,2," Sem carência para nenhum procedimento, nem próteses. Cartão de crédito PF não consome limite. "
-"Odontoprev",False,True,True,True,True,True,True,4," Planos para CNPJ e MEI com regras distintas de carência. PF não é comercializado. "
