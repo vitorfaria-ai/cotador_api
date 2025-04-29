@@ -157,25 +157,25 @@ def cotador_agent(input_usuario, todos_produtos):
             cobertura_reconhecida = False
 
 
-# Filtra as formas disponíveis para o plano escolhido
-formas_disponiveis = todos_produtos[
-    (todos_produtos['nome_plano'] == plano_escolhido['nome_plano']) &
-    (todos_produtos['tipo_contrato'].str.lower() == tipo_contrato_cliente)
-]
-
-if tipo_contrato_cliente == "pj":
-    formas_filtradas = formas_disponiveis[
-        (formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False)) &
-        (formas_disponiveis['forma_pagamento'].str.contains("mensal", case=False, na=False))
+    # Filtra as formas disponíveis para o plano escolhido
+    formas_disponiveis = todos_produtos[
+        (todos_produtos['nome_plano'] == plano_escolhido['nome_plano']) &
+        (todos_produtos['tipo_contrato'].str.lower() == tipo_contrato_cliente)
     ]
 
-    if formas_filtradas.empty:
+    if tipo_contrato_cliente == "pj":
         formas_filtradas = formas_disponiveis[
-            (formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False))
+            (formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False)) &
+            (formas_disponiveis['forma_pagamento'].str.contains("mensal", case=False, na=False))
         ]
 
-    if formas_filtradas.empty:
-        return [{"mensagem": "Não encontramos opção de boleto para este plano PJ."}]
+        if formas_filtradas.empty:
+            formas_filtradas = formas_disponiveis[
+                (formas_disponiveis['forma_pagamento'].str.contains("boleto", case=False, na=False))
+            ]
+
+        if formas_filtradas.empty:
+            return [{"mensagem": "Não encontramos opção de boleto para este plano PJ."}]
 
 
     forma = formas_filtradas.iloc[0]
