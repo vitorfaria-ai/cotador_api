@@ -12,10 +12,7 @@ import pandas as pd
 from cotador_agent import cotador_agent
 
 # Carregar os arquivos CSV
-planos = pd.read_csv("planos.csv")
-beneficios = pd.read_csv("beneficios_planos.csv")
-formas_pagamento = pd.read_csv("formas_pagamento.csv")
-regras_operadora = pd.read_csv("regras_operadora.csv")
+todos_produtos = pd.read_csv('todos_produtos_em_tabela.csv')
 
 # Iniciar o app FastAPI
 app = FastAPI()
@@ -62,9 +59,6 @@ async def cotar(input_usuario: InputUsuario):
     # Chamar o cotador
     resultado = cotador_agent(
         input_dict,
-        planos,
-        beneficios,
-        formas_pagamento,
-        regras_operadora
+        todos_produtos
     )
     return {"resultado": resultado}
