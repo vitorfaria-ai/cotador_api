@@ -94,7 +94,7 @@ def cotador_agent(input_usuario, todos_produtos):
         else:
             dores_especiais.append(problema)
 
-    # Verificar correlacoes primeiro
+    # Verificar se alguma dor exige plano específico
     plano_forcado = None
     mensagem_especial = None
 
@@ -102,52 +102,43 @@ def cotador_agent(input_usuario, todos_produtos):
         problema_normalizado = normalizar_texto(problema)
         for termo, regra in correlacoes.items():
             if comparar_termos(problema_normalizado, termo):
+                # Somente ativa plano forçado se for termo muito específico (infantil, aparelho, prótese estética, clareamento, etc.)
                 if "plano_dedicado" in regra:
                     plano_forcado = regra["plano_dedicado"]
-                if "mensagem" in regra:
-                    mensagem_especial = regra["mensagem"]
+                    mensagem_especial = regra.get("mensagem")
+                    break  # encontrou plano específico, encerra busca
+        if plano_forcado:
+            break  # sai também do loop externo assim que achar um plano dedicado
 
     # Se existe plano forçado via correlacoes
     if plano_forcado:
-        produtos_forcados = todos_produtos[
-            (todos_produtos['nome_plano'].str.contains(plano_forcado, case=False, na=False)) &
-            (todos_produtos['tipo_contrato'] == tipo_contrato)
-        ]
-        if produtos_forcados.empty:
-            return [{"mensagem": f"Não encontramos o plano especial {plano_forcado} para o tipo de contrato {tipo_contrato}."}]
-        plano_escolhido = produtos_forcados.sort_values(by='preco', ascending=True).iloc[0]
-
-        produtos_contrato = produtos_forcados.copy()
-
-
-    else:
-        # Segue fluxo normal se não houver plano forçado
-        # Primeiro, filtra todos os produtos que sejam compatíveis com o tipo de contrato
-        # Se o cliente é MEI, prioriza plano MEI; se não tiver, aceita plano PJ para operadoras que permitem
         produtos_contrato = todos_produtos[
-            (todos_produtos['tipo_contrato'].str.lower() == tipo_contrato_cliente) |
-            (todos_produtos['tipo_contrato'].str.lower() == tipo_contrato_interno)
+            (todos_produtos['nome_plano'].str.contains(plano_forcado, case=False, na=False)) &
+            (todos_produtos['tipo_contrato'] == tipo_contrato_cliente)
+        ]
+        if produtos_contrato.empty:
+            return [{"mensagem": f"Não encontramos o plano especial {plano_forcado} para o tipo de contrato {tipo_contrato_cliente}."}]
+    else:
+        # Se não tem plano forçado, escolhe baseado na prioridade e cobertura das dores especiais
+        produtos_contrato = todos_produtos[
+            (todos_produtos['tipo_contrato'] == tipo_contrato_cliente) &
+            (todos_produtos['cobertura'].apply(lambda cob: any(comparar_termos(cob, dor) for dor in dores_especiais)))
         ]
 
-        if dores_especiais:
-            produtos_cobertura = produtos_contrato[
-                produtos_contrato['cobertura'].apply(lambda c: any(comparar_termos(c, dor) for dor in dores_especiais))
-            ]
-        else:
-            produtos_cobertura = produtos_contrato.copy()
-
-        if produtos_cobertura.empty:
-            produtos_cobertura = produtos_contrato.copy()
-
-        # Regra especial clareamento
-        apenas_clareamento = (len(dores_especiais) == 1) and (normalizar_texto(dores_especiais[0]) == "clareamento")
-        if apenas_clareamento:
-            produtos_cobertura = produtos_cobertura[
-                produtos_cobertura['nome_plano'].str.contains('e50') | produtos_cobertura['nome_plano'].str.contains('premium')
+        # Se não achar nada pela cobertura especial, considera coberturas básicas (padrão Dental 205 ou equivalente)
+        if produtos_contrato.empty:
+            produtos_contrato = todos_produtos[
+                (todos_produtos['tipo_contrato'] == tipo_contrato_cliente) &
+                (todos_produtos['cobertura'].apply(lambda cob: any(comparar_termos(cob, dor) for dor in dores_basicas)))
             ]
 
-        planos_ordenados = produtos_cobertura.sort_values(by=["prioridade_operadora", "preco"])
-        plano_escolhido = planos_ordenados.iloc[0]
+        # Caso extremo: se ainda vazio, seleciona por tipo contrato apenas (garantir retorno)
+        if produtos_contrato.empty:
+            produtos_contrato = todos_produtos[todos_produtos['tipo_contrato'] == tipo_contrato_cliente]
+
+    # Ordenar por prioridade e preço SEMPRE
+    planos_ordenados = produtos_contrato.sort_values(by=["prioridade_operadora", "preco"])
+    plano_escolhido = planos_ordenados.iloc[0]
 
 
     # Verificação sensível para coberturas desconhecidas
