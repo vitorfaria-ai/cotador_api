@@ -44,12 +44,11 @@ def cotador_agent(input_usuario, produtos):
 
     for problema in dores_lista:
         for termo, regra in correlacoes.items():
-            if comparar_termos(problema, termo):
+            termo_normalizado = normalizar_texto(termo)
+            if comparar_termos(problema, termo_normalizado):
                 plano_forcado = regra.get("plano_dedicado")
                 mensagem_especial = regra.get("mensagem")
                 break
-        if plano_forcado:
-            break
 
     produtos_filtrados = produtos[produtos['tipo_contrato'].str.lower().str.strip() == tipo_contrato]
 
