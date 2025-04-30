@@ -55,7 +55,9 @@ def cotador_agent(input_usuario, produtos):
 
     if plano_forcado:
         candidatos = produtos_filtrados[
-            produtos_filtrados['nome_plano'].str.lower().str.contains(plano_forcado.lower())
+            produtos_filtrados['nome_plano'].str.lower().apply(
+                lambda nome: normalizar_texto(plano_forcado) in normalizar_texto(nome)
+            )
         ]
         if candidatos.empty:
             return [{"mensagem": f"Não encontramos o plano especial {plano_forcado} para o tipo de contrato {tipo_contrato}."}]
