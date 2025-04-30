@@ -13,15 +13,22 @@ def comparar_termos(problema, termo):
     return termo in problema or problema in termo
 
 correlacoes = {
-    "clareamento": {"plano_dedicado": "E50", "mensagem": "Clareamento exige um plano com cobertura estética."},
-    "prótese": {"plano_dedicado": "E60", "mensagem": "Próteses exigem plano com cobertura estética adequada."},
-    "resina": {"plano_dedicado": "E90", "mensagem": "Próteses estéticas como resina ou cerâmica precisam de plano estético."},
-    "cerâmica": {"plano_dedicado": "E90"},
-    "aparelho": {"plano_dedicado": "E80", "mensagem": "Aparelho ortodôntico exige plano com ortodontia."},
-    "ortodontia": {"plano_dedicado": "E80"},
-    "invisalign": {"plano_dedicado": "E80", "mensagem": "Este plano não cobre Invisalign, mas cobre aparelho tradicional."},
-    "implante": {"mensagem": "Nenhum plano cobre implante dentário, mas o plano que mais se aproxima da cobertura é o E90 Estético!", "plano_dedicado": "Dental E90"},
-    "criança": {"plano_dedicado": "Dental K25 - Linha Kids", "mensagem": "Plano Kids exclusivo para crianças até 13 anos e 11 meses."}
+"autoligado": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre aparelho autoligado, mas é o mais completo para tratamentos ortodônticos tradicionais.", "relacionado": True},
+"invisalign": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre Invisalign, mas é o mais completo para tratamentos ortodônticos convencionais.", "relacionado": True},
+"alinhador invisível": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano não cobre alinhador invisível, mas é o mais completo para tratamentos ortodônticos tradicionais.", "relacionado": True},
+"implante": {"mensagem": "Nenhum plano cobre implante dentário. Mas muitos clientes nessa situação optam pelo Dental E90, que é o plano de próteses mais completo do Brasil.", "plano_dedicado": "Dental E90", "relacionado": False},
+"protocolo": {"mensagem": "Nenhum plano cobre protocolo dentário. Mas muitos clientes nessa situação optam pelo Dental E90, que é o plano de próteses mais completo do Brasil.", "plano_dedicado": "Dental E90", "relacionado": False},
+"coroa de cerâmica": {"mensagem": "Para 'coroa de cerâmica', recomendamos planos com cobertura estética como o E90.", "plano_dedicado": "Dental E90", "relacionado": False},
+"inlay": {"mensagem": "Para 'inlay', recomendamos planos com cobertura estética como o E90.", "plano_dedicado": "Dental E90", "relacionado": False},
+"onlay": {"mensagem": "Para 'onlay', recomendamos planos com cobertura estética como o E90.", "plano_dedicado": "Dental E90", "relacionado": False},
+"ponte móvel": {"mensagem": "Para 'ponte móvel', recomendamos o plano E60 ou superiores.", "plano_dedicado": "Dental E60", "relacionado": False},
+"dentadura": {"mensagem": "Para 'dentadura', recomendamos o plano E60 ou superiores.", "plano_dedicado": "Dental E60", "relacionado": False},
+"aparelho": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+"aparelho dental": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+"aparelho ortodontico": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+"aparelho dentário": {"cobertura_associada": "tem_ortodontia", "mensagem": "Este plano cobre tratamento ortodôntico tradicional (aparelho fixo).", "relacionado": True},
+"plano infantil": {"mensagem": "Para crianças, recomendamos planos com cobertura odontopediátrica especializada.","plano_dedicado": "Dental K25 - Linha Kids", "relacionado": False},
+"para criança": {"mensagem": "Para crianças, recomendamos planos com cobertura odontopediátrica especializada.","plano_dedicado": "Dental K25 - Linha Kids", "relacionado": False},
 }
 
 def cotador_agent(input_usuario, produtos):
@@ -65,7 +72,14 @@ def cotador_agent(input_usuario, produtos):
     operadora = plano_escolhido['operadora']
     plano_id = plano_escolhido['id']
 
-    formas = produtos[produtos['id'] == plano_id]
+    formas = produtos[
+        (produtos['id'] == plano_id) &
+        (produtos['tipo_contrato'].str.lower().str.strip() == tipo_contrato)
+    ]
+
+    if tipo_contrato == "pf":
+        formas = formas[~formas["forma_pagamento"].str.lower().str.contains("boleto anual")]
+
 
     if tipo_contrato == "pj":
         formas_filtradas = formas[
@@ -104,6 +118,17 @@ def cotador_agent(input_usuario, produtos):
         }]
 
     else:
+        # Ordenar formas de pagamento para PF por preferência
+        preferencias = [
+            "cartão de crédito (consome limite)",
+            "cartão de crédito sem pegar limite",
+            "boleto mensal"
+        ]
+        formas["ordem"] = formas["forma_pagamento"].str.lower().apply(
+            lambda fp: next((i for i, pref in enumerate(preferencias) if pref in fp), 99)
+        )
+        formas = formas.sort_values(by="ordem")
+
         agrupado = {}
         for _, forma in formas.iterrows():
             preco = forma["preco"]
