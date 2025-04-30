@@ -6,7 +6,7 @@ from cotador_agent import cotador_agent
 app = FastAPI()
 
 # Carrega a base de produtos da Amil
-produtos_amil = pd.read_csv("produtos_amil.csv", sep=";", encoding="utf-8")
+produtos_amil = pd.read_csv("produtos_amil.csv", sep=",", encoding="utf-8")
 
 @app.post("/cotar")
 async def cotar(request: Request):
